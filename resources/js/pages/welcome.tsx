@@ -14,7 +14,7 @@ interface SeoData {
     twitterCard?: string;
     twitterSite?: string;
     canonicalUrl?: string;
-    localBusiness?: Record<string, any>;
+    localBusiness?: Record<string, unknown>;
     googleAnalyticsId?: string;
     googleTagManagerId?: string;
     facebookPixelId?: string;
@@ -33,13 +33,67 @@ interface SeoData {
     };
 }
 
+interface HeroData {
+    badge_text?: string;
+    title_line1?: string;
+    title_line2?: string;
+    subtitle?: string;
+    primary_button_text?: string;
+    primary_button_link?: string;
+    secondary_button_text?: string;
+    secondary_button_link?: string;
+    background_image?: string;
+}
+
+interface AboutData {
+    badge_text?: string;
+    title_line1?: string;
+    title_line2?: string;
+    lead_paragraph?: string;
+    content?: string;
+    image?: string;
+    stat_number?: string;
+    stat_label?: string;
+    feature1_title?: string;
+    feature1_description?: string;
+    feature2_title?: string;
+    feature2_description?: string;
+}
+
+interface CategoryData {
+    title: string;
+    description?: string;
+    icon?: string;
+    image?: string;
+    color_from?: string;
+    color_to?: string;
+}
+
+interface GalleryData {
+    title: string;
+    category?: string;
+    image?: string;
+    gradient_from?: string;
+    gradient_via?: string;
+    gradient_to?: string;
+    is_large?: boolean;
+    is_featured?: boolean;
+}
+
+interface TestimonialData {
+    content: string;
+    author_name: string;
+    author_title?: string;
+    rating?: number;
+}
+
 interface Props {
     seo?: SeoData;
-    hero?: any;
-    about?: any;
-    categories?: any[];
-    gallery?: any[];
-    testimonials?: any[];
+    hero?: HeroData;
+    about?: AboutData;
+    categories?: CategoryData[];
+    gallery?: GalleryData[];
+    testimonials?: TestimonialData[];
     settings?: {
         site_name?: string;
         location_name?: string;
@@ -59,11 +113,19 @@ interface Props {
     };
 }
 
-export default function Welcome({ seo, hero, about, categories, gallery, testimonials: dbTestimonials, settings }: Props) {
+export default function Welcome({ seo, categories, gallery, testimonials: dbTestimonials, settings }: Props) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeTestimonial, setActiveTestimonial] = useState(0);
-    const [cookieConsent, setCookieConsent] = useState<'pending' | 'accepted' | 'declined'>('pending');
+    // Initialize cookie consent from localStorage
+    const [cookieConsent, setCookieConsent] = useState<'pending' | 'accepted' | 'declined'>(() => {
+        if (typeof window !== 'undefined') {
+            const consent = localStorage.getItem('cookie_consent');
+            if (consent === 'accepted') return 'accepted';
+            if (consent === 'declined') return 'declined';
+        }
+        return 'pending';
+    });
     const [showCookieBanner, setShowCookieBanner] = useState(false);
     
     // Contact form state
@@ -77,21 +139,13 @@ export default function Welcome({ seo, hero, about, categories, gallery, testimo
     const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
     const [formMessage, setFormMessage] = useState('');
 
-    // Check for existing cookie consent on mount
+    // Show cookie banner after delay if consent is pending
     useEffect(() => {
-        const consent = localStorage.getItem('cookie_consent');
-        if (consent === 'accepted') {
-            setCookieConsent('accepted');
-            setShowCookieBanner(false);
-        } else if (consent === 'declined') {
-            setCookieConsent('declined');
-            setShowCookieBanner(false);
-        } else {
-            // Show banner after a short delay for better UX
+        if (cookieConsent === 'pending') {
             const timer = setTimeout(() => setShowCookieBanner(true), 1500);
             return () => clearTimeout(timer);
         }
-    }, []);
+    }, [cookieConsent]);
 
     const handleAcceptCookies = () => {
         localStorage.setItem('cookie_consent', 'accepted');
@@ -136,7 +190,7 @@ export default function Welcome({ seo, hero, about, categories, gallery, testimo
                     setFormMessage(data.message || 'Something went wrong. Please try again.');
                 }
             }
-        } catch (error) {
+        } catch {
             setFormStatus('error');
             setFormMessage('Network error. Please check your connection and try again.');
         }
@@ -255,7 +309,6 @@ export default function Welcome({ seo, hero, about, categories, gallery, testimo
     const pageDescription = seo?.description || "Your one-stop shop for wholesale and retail craft supplies in La Puente, CA.";
 
     // Site settings with defaults
-    const siteName = settings?.site_name || "Mary's Lace n Craft";
     const locationName = settings?.location_name || "South Hill Square";
     const phone = settings?.phone || "(626) 918-8511";
     const addressLine1 = settings?.address_line1 || "South Hills Shopping Center";
